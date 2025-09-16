@@ -22,7 +22,10 @@ import {
   AlertTriangle,
   Check,
   Merge,
-  UserX
+  UserX,
+  Tag,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 
 // API Configuration
@@ -295,6 +298,123 @@ const parseCSVRow = (row) => {
   // Add the last field
   result.push(current);
   return result;
+};
+
+// Bulk Tagging Component
+const BulkTagging = ({ selectedContacts, onTagApplied, onCancel }) => {
+  const [selectedTag, setSelectedTag] = useState('');
+  const [customTag, setCustomTag] = useState('');
+  const [applying, setApplying] = useState(false);
+
+  const predefinedTags = ['CBS', 'Water Roads', 'Personal', 'Client', 'Prospect', 'Partner'];
+
+  const handleApplyTag = async () => {
+    const tagToApply = selectedTag === 'custom' ? customTag : selectedTag;
+    
+    if (!tagToApply.trim()) {
+      alert('Please select or enter a tag');
+      return;
+    }
+
+    setApplying(true);
+    
+    try {
+      // Apply tag to all selected contacts
+      for (const contact of selectedContacts) {
+        const updatedTags = [...new Set([...(contact.tags || []), tagToApply.trim()])];
+        await apiCall(`/api/contacts/${contact.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            ...contact,
+            tags: updatedTags
+          }),
+        });
+      }
+      
+      onTagApplied();
+    } catch (error) {
+      console.error('Error applying tags:', error);
+      alert('Error applying tags. Please try again.');
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center space-x-3">
+        <Tag className="h-6 w-6 text-blue-500" />
+        <h3 className="text-lg font-semibold text-gray-900">
+          Apply Tag to {selectedContacts.length} Contact{selectedContacts.length !== 1 ? 's' : ''}
+        </h3>
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="font-medium text-gray-900 mb-2">Selected Contacts:</h4>
+        <div className="max-h-32 overflow-y-auto">
+          {selectedContacts.map((contact, index) => (
+            <div key={contact.id} className="text-sm text-gray-700">
+              {contact.first_name} {contact.last_name} - {contact.email}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h4 className="font-medium text-gray-900">Choose a tag to apply:</h4>
+        
+        {predefinedTags.map((tag) => (
+          <label key={tag} className="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="tagChoice"
+              value={tag}
+              checked={selectedTag === tag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className="h-4 w-4 text-blue-600"
+            />
+            <span className="text-sm text-gray-700">{tag}</span>
+          </label>
+        ))}
+        
+        <label className="flex items-center space-x-3">
+          <input
+            type="radio"
+            name="tagChoice"
+            value="custom"
+            checked={selectedTag === 'custom'}
+            onChange={(e) => setSelectedTag(e.target.value)}
+            className="h-4 w-4 text-blue-600"
+          />
+          <span className="text-sm text-gray-700">Custom tag:</span>
+          <input
+            type="text"
+            value={customTag}
+            onChange={(e) => setCustomTag(e.target.value)}
+            placeholder="Enter custom tag"
+            disabled={selectedTag !== 'custom'}
+            className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+          />
+        </label>
+      </div>
+
+      <div className="flex justify-end space-x-3 pt-4">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleApplyTag}
+          disabled={applying || (!selectedTag || (selectedTag === 'custom' && !customTag.trim()))}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+        >
+          {applying ? 'Applying...' : 'Apply Tag'}
+        </button>
+      </div>
+    </div>
+  );
 };
 
 // Duplicate Resolution Component (unchanged but improved error handling)
@@ -1095,15 +1215,19 @@ const Dashboard = () => {
   );
 };
 
-// Enhanced Contacts Component with CSV Upload
+// Enhanced Contacts Component with Bulk Tagging and Tag Filtering
 const Contacts = () => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCompany, setFilterCompany] = useState('');
+  const [filterTag, setFilterTag] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCSVModal, setShowCSVModal] = useState(false);
+  const [showBulkTagModal, setShowBulkTagModal] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
+  const [selectedContacts, setSelectedContacts] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   const fetchContacts = async () => {
     try {
@@ -1174,13 +1298,42 @@ const Contacts = () => {
     fetchContacts();
   };
 
+  const handleBulkTagComplete = () => {
+    setShowBulkTagModal(false);
+    setSelectedContacts([]);
+    setSelectAll(false);
+    fetchContacts();
+  };
+
+  const handleSelectContact = (contact) => {
+    setSelectedContacts(prev => {
+      const isSelected = prev.some(c => c.id === contact.id);
+      if (isSelected) {
+        return prev.filter(c => c.id !== contact.id);
+      } else {
+        return [...prev, contact];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedContacts([]);
+    } else {
+      setSelectedContacts(filteredContacts);
+    }
+    setSelectAll(!selectAll);
+  };
+
   const companies = [...new Set(contacts.map(c => c.company).filter(Boolean))];
+  const allTags = [...new Set(contacts.flatMap(c => c.tags || []))].sort();
 
   const filteredContacts = contacts.filter(contact => {
     const matchesSearch = !searchTerm || 
       `${contact.first_name} ${contact.last_name} ${contact.email}`.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCompany = !filterCompany || contact.company === filterCompany;
-    return matchesSearch && matchesCompany;
+    const matchesTag = !filterTag || (contact.tags && contact.tags.includes(filterTag));
+    return matchesSearch && matchesCompany && matchesTag;
   });
 
   if (loading) {
@@ -1192,6 +1345,15 @@ const Contacts = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
         <div className="flex gap-3">
+          {selectedContacts.length > 0 && (
+            <button 
+              onClick={() => setShowBulkTagModal(true)}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center"
+            >
+              <Tag className="h-4 w-4 mr-2" />
+              Tag Selected ({selectedContacts.length})
+            </button>
+          )}
           <button 
             onClick={() => setShowCSVModal(true)}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
@@ -1209,7 +1371,7 @@ const Contacts = () => {
         </div>
       </div>
 
-      {/* Search and Filter */}
+      {/* Enhanced Search and Filter */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -1234,6 +1396,19 @@ const Contacts = () => {
             ))}
           </select>
         </div>
+        <div className="relative">
+          <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <select
+            value={filterTag}
+            onChange={(e) => setFilterTag(e.target.value)}
+            className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">All Tags</option>
+            {allTags.map(tag => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Contacts Table */}
@@ -1242,6 +1417,19 @@ const Contacts = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    onClick={handleSelectAll}
+                    className="flex items-center space-x-2"
+                  >
+                    {selectAll ? (
+                      <CheckSquare className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <Square className="h-4 w-4 text-gray-400" />
+                    )}
+                    <span>Select</span>
+                  </button>
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Name
                 </th>
@@ -1266,55 +1454,75 @@ const Contacts = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredContacts.map((contact) => (
-                <tr key={contact.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {contact.first_name} {contact.last_name}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{contact.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{contact.phone}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{contact.company}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{contact.title}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-wrap gap-1">
-                      {contact.tags && contact.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+              {filteredContacts.map((contact) => {
+                const isSelected = selectedContacts.some(c => c.id === contact.id);
+                return (
+                  <tr key={contact.id} className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => handleSelectContact(contact)}
+                        className="flex items-center"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="h-4 w-4 text-blue-600" />
+                        ) : (
+                          <Square className="h-4 w-4 text-gray-400" />
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {contact.first_name} {contact.last_name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{contact.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{contact.phone}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{contact.company}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{contact.title}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-wrap gap-1">
+                        {contact.tags && contact.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              tag === 'CBS' ? 'bg-blue-100 text-blue-800' :
+                              tag === 'Water Roads' ? 'bg-green-100 text-green-800' :
+                              tag === 'Personal' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingContact(contact)}
+                          className="text-blue-600 hover:text-blue-900"
                         >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEditingContact(contact)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteContact(contact.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteContact(contact.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1324,7 +1532,7 @@ const Contacts = () => {
             <Users className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No contacts found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {searchTerm || filterCompany ? 'Try adjusting your search criteria.' : 'Get started by adding a new contact or importing from CSV.'}
+              {searchTerm || filterCompany || filterTag ? 'Try adjusting your search criteria.' : 'Get started by adding a new contact or importing from CSV.'}
             </p>
           </div>
         )}
@@ -1359,6 +1567,20 @@ const Contacts = () => {
         <CSVUpload
           onImportComplete={handleCSVImportComplete}
           onCancel={() => setShowCSVModal(false)}
+        />
+      </Modal>
+
+      {/* Bulk Tagging Modal */}
+      <Modal
+        isOpen={showBulkTagModal}
+        onClose={() => setShowBulkTagModal(false)}
+        title="Apply Tags to Selected Contacts"
+        size="lg"
+      >
+        <BulkTagging
+          selectedContacts={selectedContacts}
+          onTagApplied={handleBulkTagComplete}
+          onCancel={() => setShowBulkTagModal(false)}
         />
       </Modal>
     </div>
@@ -2102,3 +2324,4 @@ const App = () => {
 };
 
 export default App;
+
