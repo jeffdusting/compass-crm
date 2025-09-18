@@ -2,11 +2,15 @@ import { useState } from 'react'
 import { ContactList } from '@/components/ContactList'
 import { ContactForm } from '@/components/ContactForm'
 import { ContactDetail } from '@/components/ContactDetail'
+import OpportunityList from './components/OpportunityList'
+import ActivityList from './components/ActivityList'
 import './App.css'
 
 function App() {
-  const [currentView, setCurrentView] = useState('list') // 'list', 'form', 'detail'
+  const [currentView, setCurrentView] = useState('list') // 'list', 'form', 'detail', 'opportunities', 'activities'
   const [selectedContact, setSelectedContact] = useState(null)
+  const [selectedOpportunity, setSelectedOpportunity] = useState(null)
+  const [selectedActivity, setSelectedActivity] = useState(null)
   const [editingContact, setEditingContact] = useState(null)
 
   const handleContactSelect = (contact) => {
@@ -45,6 +49,28 @@ function App() {
     setEditingContact(null)
   }
 
+  const handleSelectOpportunity = (opportunity) => {
+    setSelectedOpportunity(opportunity)
+    // TODO: Implement opportunity detail view
+    console.log('Selected opportunity:', opportunity)
+  }
+
+  const handleSelectActivity = (activity) => {
+    setSelectedActivity(activity)
+    // TODO: Implement activity detail view
+    console.log('Selected activity:', activity)
+  }
+
+  const handleCreateOpportunity = () => {
+    // TODO: Implement opportunity form
+    console.log('Create opportunity clicked')
+  }
+
+  const handleCreateActivity = () => {
+    // TODO: Implement activity form
+    console.log('Create activity clicked')
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -61,19 +87,33 @@ function App() {
               <button 
                 onClick={handleBackToList}
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentView === 'list' 
+                  currentView === 'list' || currentView === 'form' || currentView === 'detail'
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 Contacts
               </button>
-              <span className="px-3 py-2 text-sm text-gray-400">
+              <button 
+                onClick={() => setCurrentView('opportunities')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentView === 'opportunities'
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
                 Opportunities (Phase 2)
-              </span>
-              <span className="px-3 py-2 text-sm text-gray-400">
+              </button>
+              <button 
+                onClick={() => setCurrentView('activities')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentView === 'activities'
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
                 Activities (Phase 2)
-              </span>
+              </button>
             </nav>
           </div>
         </div>
@@ -104,13 +144,27 @@ function App() {
             onBack={handleBackToList}
           />
         )}
+
+        {currentView === 'opportunities' && (
+          <OpportunityList
+            onSelectOpportunity={handleSelectOpportunity}
+            onCreateOpportunity={handleCreateOpportunity}
+          />
+        )}
+
+        {currentView === 'activities' && (
+          <ActivityList
+            onSelectActivity={handleSelectActivity}
+            onCreateActivity={handleCreateActivity}
+          />
+        )}
       </main>
 
       {/* Footer */}
       <footer className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="text-center text-sm text-gray-500">
-            Compass CRM - Phase 1: Contact Management
+            Compass CRM - Phase 2: Opportunity and Activity Management
           </div>
         </div>
       </footer>
