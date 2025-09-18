@@ -1,0 +1,7 @@
+first_name,last_name,email,phone,company,job_title,address,notes,tags
+Alice,Wilson,alice.wilson@cbsgroup.com.au,+61 2 9876 5434,CBS Group,Marketing Manager,123 Collins St Melbourne VIC 3000,New marketing contact for Q4 campaigns,marketing;lead;q4
+Bob,Taylor,bob.taylor@waterroads.com.au,+61 3 8765 4323,Water Roads,Project Manager,456 Flinders St Melbourne VIC 3001,Infrastructure project lead,infrastructure;project;manager
+Carol,Davis,carol.davis@cbsgroup.com.au,+61 2 9876 5435,CBS Group,Sales Director,789 Bourke St Melbourne VIC 3000,Key sales stakeholder,sales;director;vip
+David,Brown,david.brown@waterroads.com.au,+61 3 8765 4324,Water Roads,Technical Lead,321 Queen St Melbourne VIC 3001,Technical implementation specialist,technical;lead;implementation
+John,Smith,john.smith@cbsgroup.com.au,+61 2 9876 5432,CBS Group,General Manager,555 King St Melbourne VIC 3000,Duplicate contact for testing,duplicate;test;existing
+

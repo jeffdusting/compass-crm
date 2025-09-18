@@ -3,14 +3,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, Edit, Trash2, Mail, Phone, Building } from 'lucide-react'
+import { Search, Plus, Edit, Trash2, Mail, Phone, Building, Upload } from 'lucide-react'
 import { contactService } from '@/lib/supabase'
+import CSVImport from './CSVImport'
 
 export function ContactList({ onContactSelect, onContactCreate, onContactEdit }) {
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [error, setError] = useState(null)
+  const [showCSVImport, setShowCSVImport] = useState(false)
 
   useEffect(() => {
     loadContacts()
@@ -43,6 +45,11 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
     }
   }
 
+  const handleCSVImportComplete = () => {
+    setShowCSVImport(false)
+    loadContacts() // Reload contacts after import
+  }
+
   if (loading) {
     return (
       <Card>
@@ -66,10 +73,20 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
             className="pl-10"
           />
         </div>
-        <Button onClick={onContactCreate} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add New Contact
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowCSVImport(true)} 
+            className="flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Import CSV
+          </Button>
+          <Button onClick={onContactCreate} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add New Contact
+          </Button>
+        </div>
       </div>
 
       {/* Error message */}
@@ -168,6 +185,14 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
           ))
         )}
       </div>
+
+      {/* CSV Import Modal */}
+      {showCSVImport && (
+        <CSVImport
+          onImportComplete={handleCSVImportComplete}
+          onCancel={() => setShowCSVImport(false)}
+        />
+      )}
     </div>
   )
 }
