@@ -1,58 +1,130 @@
-# Compass CRM
+# Compass CRM - Phase 3.2
 
-Modern Customer Relationship Management System for CBS Group and Water Roads.
+A comprehensive Customer Relationship Management system designed for CBS Group and Water Roads, featuring advanced contact management, opportunity tracking, and sales pipeline functionality.
 
-## 🌐 Live Application
+## 🚀 Current Status: Phase 3.2 Complete
 
-**Production URL:** https://compasscrm.cbslab.app
+This repository contains a fully functional CRM system with the following capabilities:
 
-## ✅ System Status
+### ✅ Core Features
+- **Contact Management**: Complete CRUD operations with advanced search and filtering
+- **CSV Import/Export**: Bulk operations with intelligent duplicate detection and resolution
+- **Opportunity Management**: Sales pipeline tracking with stage progression
+- **Responsive Design**: Mobile-first interface optimized for all devices
+- **Company Tagging**: Multi-tenant support for CBS Group and Water Roads
 
-- ✅ **Frontend:** Deployed on Vercel
-- ✅ **Database:** Supabase PostgreSQL (operational)
-- ✅ **Backend Services:** Supabase-based microservices
-- ✅ **Custom Domain:** compasscrm.cbslab.app
+## 🛠️ Technology Stack
 
-## 🚀 Features
+- **Frontend**: React 18 with Vite
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Routing**: React Router v6
+- **Build Tool**: Vite
 
-- **Contact Management** - Comprehensive contact database with CBS/Water Roads tagging
-- **Opportunity Tracking** - Sales pipeline management and forecasting
-- **Activity Logging** - Complete activity management system
-- **Interactive Dashboard** - Real-time analytics and insights
-- **Responsive Design** - Works on desktop and mobile devices
+## 📦 Installation & Setup
 
-## 🔧 Technology Stack
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jeffdusting/compass-crm.git
+   cd compass-crm
+   ```
 
-- **Frontend:** React 18 + Vite + Tailwind CSS
-- **Backend:** Supabase (PostgreSQL + REST API)
-- **Hosting:** Vercel (Frontend) + Supabase (Database)
-- **Domain:** compasscrm.cbslab.app
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## 📊 Sample Data
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-The system includes validated sample data:
-- **John Smith** (Tech Corp) - CBS tagged
-- **Sarah Johnson** (Water Tech) - Water Roads tagged  
-- **Mike Wilson** (Wilson Construction) - Both CBS and Water Roads tagged
+4. **Build for production**
+   ```bash
+   npm run build
+   ```
 
-## 🔐 Environment Variables
+## 🎯 Key Features
 
-```env
-VITE_API_BASE_URL=https://compasscrm.cbslab.app/api
-VITE_SUPABASE_URL=https://eisewfroxfhovsxaignq.supabase.co
-VITE_SUPABASE_ANON_KEY=[configured-in-vercel]
-```
+### Contact Management
+- Create, edit, and delete contacts
+- Advanced search across all fields
+- Filter by company, tags, and dates
+- Bulk operations and tagging
+- Data validation and normalization
 
-## 🏢 Company Tagging
+### CSV Operations
+- Import contacts from CSV files
+- Intelligent duplicate detection using multiple criteria
+- Flexible duplicate resolution (merge, skip, add new)
+- Export filtered contact lists
+- Import progress tracking and error reporting
 
-- **CBS** - CBS Group contacts (blue tags)
-- **Water Roads** - Water Roads contacts (green tags)
+### Opportunity Management
+- Create opportunities linked to contacts
+- Track sales pipeline stages
+- Manage deal values and currencies
+- Progress tracking and history
+- Stage-based workflow management
 
-## 📞 Support
+### User Interface
+- Responsive design for desktop and mobile
+- Intuitive navigation with React Router
+- Clean, modern interface design
+- Touch-friendly mobile interactions
+- Consistent design language
 
-For technical support or feature requests, contact the development team.
+## 📊 Data Management
+
+### Contact Fields
+- First Name, Last Name (required)
+- Email (required, validated)
+- Phone, Company, Job Title
+- Address, Notes, Tags
+- Created/Modified timestamps
+
+### Opportunity Fields
+- Title, Description
+- Associated Contact
+- Stage (Lead → Qualified → Proposal → Negotiation → Closed)
+- Value and Currency
+- Expected Close Date
+- Priority and Probability
+
+## 🏢 Multi-Tenant Support
+
+The system supports both CBS Group and Water Roads with:
+- Company tagging on contacts
+- Separate data views and filtering
+- Shared contact capabilities
+- Organization-specific workflows
+
+## 🎯 Phase 3.2 Achievements
+
+- ✅ Complete contact lifecycle management
+- ✅ Advanced CSV import with duplicate handling
+- ✅ Opportunity pipeline management
+- ✅ Responsive design for all devices
+- ✅ Search and filtering capabilities
+- ✅ Data export functionality
+- ✅ Company tagging and organization
+- ✅ Input validation and error handling
+
+## 🚀 Future Enhancements (Phase 4+)
+
+- Email integration capabilities
+- Advanced reporting and analytics
+- Enhanced activity tracking
+- API development for external integrations
+- Advanced user management and permissions
+
+## 📝 License
+
+This project is proprietary software developed for CBS Group and Water Roads.
 
 ---
 
-**© 2025 CBS Group & Water Roads - Compass CRM**
+**Version**: Phase 3.2  
+**Last Updated**: September 2025  
+**Status**: Production Ready
 
