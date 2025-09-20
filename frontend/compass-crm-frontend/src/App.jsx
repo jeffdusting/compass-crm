@@ -4,10 +4,11 @@ import { ContactForm } from '@/components/ContactForm'
 import { ContactDetail } from '@/components/ContactDetail'
 import OpportunityList from './components/OpportunityList'
 import ActivityList from './components/ActivityList'
+import EmailIntegration from './components/EmailIntegration'
 import './App.css'
 
 function App() {
-  const [currentView, setCurrentView] = useState('list') // 'list', 'form', 'detail', 'opportunities', 'activities'
+  const [currentView, setCurrentView] = useState('list') // 'list', 'form', 'detail', 'opportunities', 'activities', 'email'
   const [selectedContact, setSelectedContact] = useState(null)
   const [selectedOpportunity, setSelectedOpportunity] = useState(null)
   const [selectedActivity, setSelectedActivity] = useState(null)
@@ -114,6 +115,16 @@ function App() {
               >
                 Activities (Phase 2)
               </button>
+              <button 
+                onClick={() => setCurrentView('email')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentView === 'email'
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Email Integration (Phase 3)
+              </button>
             </nav>
           </div>
         </div>
@@ -158,13 +169,17 @@ function App() {
             onCreateActivity={handleCreateActivity}
           />
         )}
+
+        {currentView === 'email' && (
+          <EmailIntegration />
+        )}
       </main>
 
       {/* Footer */}
       <footer className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="text-center text-sm text-gray-500">
-            Compass CRM - Phase 2: Opportunity and Activity Management
+            Compass CRM - Phase 3: Microsoft Graph Email Integration
           </div>
         </div>
       </footer>
