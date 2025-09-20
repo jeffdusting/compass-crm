@@ -93,22 +93,28 @@ const EmailIntegration = () => {
   };
 
   const handleConnectMicrosoft = () => {
-    // In a real implementation, this would redirect to Microsoft OAuth
-    const authUrl = `/api/auth/microsoft?tenant_id=cbs_group`;
+    // Redirect to Microsoft OAuth via our API server
+    const authUrl = `http://localhost:3001/api/auth/microsoft?tenant_id=cbs_group`;
     window.location.href = authUrl;
   };
 
   const handleSyncEmails = async (accountId) => {
     setSyncing(true);
     try {
-      // In a real implementation, this would call the sync API
-      const response = await fetch(`/api/email/sync/${accountId}`, {
-        method: 'POST'
+      const response = await fetch(`http://localhost:3001/api/email/sync/${accountId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (!response.ok) {
-        throw new Error('Sync failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Sync failed');
       }
+
+      const result = await response.json();
+      console.log('Sync result:', result);
 
       await loadEmailAccounts();
       await loadEmails();
@@ -117,7 +123,7 @@ const EmailIntegration = () => {
       setError(null);
     } catch (error) {
       console.error('Error syncing emails:', error);
-      setError('Failed to sync emails');
+      setError(`Failed to sync emails: ${error.message}`);
     } finally {
       setSyncing(false);
     }
