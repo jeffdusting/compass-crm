@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { supabase } from '../lib/supabase'
-import { Search, Plus, Calendar, Clock, CheckCircle, AlertCircle, Phone, Mail, Users, FileText, Target, MessageSquare } from 'lucide-react'
+import { Search, Plus, Calendar, Clock, CheckCircle, AlertCircle, Phone, Mail, Users, FileText, Target, MessageSquare, Edit, Trash2 } from 'lucide-react'
+import ActivityForm from './ActivityForm'
+import ActivityDetail from './ActivityDetail'
 
 const ActivityList = ({ onSelectActivity, onCreateActivity }) => {
   const [activities, setActivities] = useState([])
@@ -8,6 +14,10 @@ const ActivityList = ({ onSelectActivity, onCreateActivity }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [showForm, setShowForm] = useState(false)
+  const [editingActivity, setEditingActivity] = useState(null)
+  const [selectedActivity, setSelectedActivity] = useState(null)
+  const [view, setView] = useState('list') // 'list', 'detail'
 
   const activityTypes = [
     { value: 'all', label: 'All Types' },
@@ -114,11 +124,91 @@ const ActivityList = ({ onSelectActivity, onCreateActivity }) => {
     return new Date(dueDate) < new Date()
   }
 
+  const handleCreateActivity = () => {
+    setEditingActivity(null)
+    setShowForm(true)
+  }
+
+  const handleEditActivity = (activity) => {
+    setEditingActivity(activity)
+    setShowForm(true)
+  }
+
+  const handleViewActivity = (activity) => {
+    setSelectedActivity(activity)
+    setView('detail')
+  }
+
+  const handleSaveActivity = (savedActivity) => {
+    if (editingActivity) {
+      // Update existing activity
+      setActivities(prev => 
+        prev.map(act => act.id === savedActivity.id ? savedActivity : act)
+      )
+    } else {
+      // Add new activity
+      setActivities(prev => [savedActivity, ...prev])
+    }
+    setShowForm(false)
+    setEditingActivity(null)
+  }
+
+  const handleDeleteActivity = async (activityId) => {
+    try {
+      const { error } = await supabase
+        .from('activities')
+        .delete()
+        .eq('id', activityId)
+
+      if (error) throw error
+
+      setActivities(prev => prev.filter(act => act.id !== activityId))
+      
+      // If we're viewing the deleted activity, go back to list
+      if (selectedActivity && selectedActivity.id === activityId) {
+        setView('list')
+        setSelectedActivity(null)
+      }
+    } catch (error) {
+      console.error('Error deleting activity:', error)
+      alert('Failed to delete activity: ' + error.message)
+    }
+  }
+
+  const handleBackToList = () => {
+    setView('list')
+    setSelectedActivity(null)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg text-gray-600">Loading activities...</div>
       </div>
+    )
+  }
+
+  // Show activity detail view
+  if (view === 'detail' && selectedActivity) {
+    return (
+      <>
+        <ActivityDetail
+          activity={selectedActivity}
+          onBack={handleBackToList}
+          onEdit={handleEditActivity}
+          onDelete={handleDeleteActivity}
+        />
+        {showForm && (
+          <ActivityForm
+            activity={editingActivity}
+            onSave={handleSaveActivity}
+            onCancel={() => {
+              setShowForm(false)
+              setEditingActivity(null)
+            }}
+          />
+        )}
+      </>
     )
   }
 
@@ -130,25 +220,21 @@ const ActivityList = ({ onSelectActivity, onCreateActivity }) => {
           <h2 className="text-2xl font-bold text-gray-900">Activities</h2>
           <p className="text-gray-600">Track calls, meetings, tasks, and follow-ups</p>
         </div>
-        <button
-          onClick={onCreateActivity}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
+        <Button onClick={handleCreateActivity} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Add New Activity
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
       <div className="flex gap-4 items-center flex-wrap">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <input
-            type="text"
+          <Input
             placeholder="Search activities..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="pl-10"
           />
         </div>
         <select
@@ -187,54 +273,76 @@ const ActivityList = ({ onSelectActivity, onCreateActivity }) => {
           </p>
           {!searchTerm && typeFilter === 'all' && statusFilter === 'all' && (
             <div className="mt-6">
-              <button
-                onClick={onCreateActivity}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
-              >
+              <Button onClick={handleCreateActivity} className="flex items-center gap-2 mx-auto">
                 <Plus className="h-4 w-4" />
                 Add New Activity
-              </button>
+              </Button>
             </div>
           )}
         </div>
       ) : (
         <div className="space-y-4">
           {filteredActivities.map((activity) => (
-            <div
+            <Card
               key={activity.id}
-              onClick={() => onSelectActivity(activity)}
-              className={`bg-white rounded-lg border p-4 hover:shadow-md transition-shadow cursor-pointer ${
-                isOverdue(activity.due_date, activity.status) ? 'border-red-200 bg-red-50' : 'border-gray-200'
+              className={`hover:shadow-md transition-shadow cursor-pointer ${
+                isOverdue(activity.due_date, activity.status) ? 'border-red-200 bg-red-50' : ''
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="flex items-center gap-2">
-                      {getActivityIcon(activity.type)}
-                      <h3 className="font-semibold text-gray-900">
-                        {activity.subject}
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[activity.status]}`}>
-                        {statuses.find(s => s.value === activity.status)?.label}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[activity.priority]}`}>
-                        {activity.priority}
-                      </span>
-                      {isOverdue(activity.due_date, activity.status) && (
-                        <span className="flex items-center gap-1 text-red-600 text-xs">
-                          <AlertCircle className="h-3 w-3" />
-                          Overdue
-                        </span>
-                      )}
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div onClick={() => handleViewActivity(activity)} className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        {getActivityIcon(activity.type)}
+                        <CardTitle className="text-lg">
+                          {activity.subject}
+                        </CardTitle>
+                      </div>
                     </div>
                   </div>
-
+                  <div className="flex items-center gap-2">
+                    <Badge className={statusColors[activity.status]}>
+                      {statuses.find(s => s.value === activity.status)?.label}
+                    </Badge>
+                    <Badge className={priorityColors[activity.priority]}>
+                      {activity.priority}
+                    </Badge>
+                    {isOverdue(activity.due_date, activity.status) && (
+                      <Badge className="bg-red-100 text-red-800 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        Overdue
+                      </Badge>
+                    )}
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditActivity(activity)
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteActivity(activity.id)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0" onClick={() => handleViewActivity(activity)}>
+                <div className="space-y-3">
                   {/* Contact and Opportunity Info */}
-                  <div className="flex items-center gap-4 mb-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
                     {activity.contacts && (
                       <span>
                         Contact: {activity.contacts.first_name} {activity.contacts.last_name}
@@ -250,7 +358,7 @@ const ActivityList = ({ onSelectActivity, onCreateActivity }) => {
 
                   {/* Due Date */}
                   {activity.due_date && (
-                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
                       <Clock className="h-4 w-4" />
                       <span>Due: {formatDateTime(activity.due_date)}</span>
                     </div>
@@ -258,7 +366,7 @@ const ActivityList = ({ onSelectActivity, onCreateActivity }) => {
 
                   {/* Description */}
                   {activity.description && (
-                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                    <p className="text-sm text-gray-600 line-clamp-2">
                       {activity.description}
                     </p>
                   )}
@@ -267,25 +375,34 @@ const ActivityList = ({ onSelectActivity, onCreateActivity }) => {
                   {activity.tags && activity.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {activity.tags.slice(0, 3).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                        >
+                        <Badge key={index} variant="secondary" className="text-xs">
                           {tag}
-                        </span>
+                        </Badge>
                       ))}
                       {activity.tags.length > 3 && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        <Badge variant="outline" className="text-xs">
                           +{activity.tags.length - 3} more
-                        </span>
+                        </Badge>
                       )}
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
+      )}
+
+      {/* Activity Form Modal */}
+      {showForm && (
+        <ActivityForm
+          activity={editingActivity}
+          onSave={handleSaveActivity}
+          onCancel={() => {
+            setShowForm(false)
+            setEditingActivity(null)
+          }}
+        />
       )}
     </div>
   )

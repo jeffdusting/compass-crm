@@ -3,9 +3,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, Edit, Trash2, Mail, Phone, Building, Upload } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Search, Plus, Edit, Trash2, Mail, Phone, Building, Upload, Download, Settings } from 'lucide-react'
 import { contactService } from '@/lib/supabase'
 import CSVImport from './CSVImport'
+import ContactExport from './ContactExport'
+import ContactBulkOperations from './ContactBulkOperations'
 
 export function ContactList({ onContactSelect, onContactCreate, onContactEdit }) {
   const [contacts, setContacts] = useState([])
@@ -13,6 +16,10 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
   const [searchTerm, setSearchTerm] = useState('')
   const [error, setError] = useState(null)
   const [showCSVImport, setShowCSVImport] = useState(false)
+  const [showExport, setShowExport] = useState(false)
+  const [showBulkOperations, setShowBulkOperations] = useState(false)
+  const [selectedContacts, setSelectedContacts] = useState([])
+  const [selectAll, setSelectAll] = useState(false)
 
   useEffect(() => {
     loadContacts()
@@ -50,6 +57,38 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
     loadContacts() // Reload contacts after import
   }
 
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedContacts([])
+      setSelectAll(false)
+    } else {
+      setSelectedContacts([...contacts])
+      setSelectAll(true)
+    }
+  }
+
+  const handleContactSelect = (contact, isSelected) => {
+    if (isSelected) {
+      setSelectedContacts(prev => [...prev, contact])
+    } else {
+      setSelectedContacts(prev => prev.filter(c => c.id !== contact.id))
+    }
+  }
+
+  const handleBulkOperationComplete = () => {
+    setSelectedContacts([])
+    setSelectAll(false)
+    setShowBulkOperations(false)
+    loadContacts() // Reload contacts after bulk operation
+  }
+
+  // Update selectAll state when individual selections change
+  useEffect(() => {
+    if (contacts.length > 0) {
+      setSelectAll(selectedContacts.length === contacts.length)
+    }
+  }, [selectedContacts, contacts])
+
   if (loading) {
     return (
       <Card>
@@ -62,31 +101,70 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
 
   return (
     <div className="space-y-4">
-      {/* Header with search and add button */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search contacts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      {/* Header with search and controls */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search contacts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCSVImport(true)} 
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Import CSV
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowExport(true)} 
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={onContactCreate} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add New Contact
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowCSVImport(true)} 
-            className="flex items-center gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            Import CSV
-          </Button>
-          <Button onClick={onContactCreate} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add New Contact
-          </Button>
-        </div>
+
+        {/* Selection controls */}
+        {contacts.length > 0 && (
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={selectAll}
+                onCheckedChange={handleSelectAll}
+              />
+              <span className="text-sm text-gray-600">
+                {selectedContacts.length > 0 
+                  ? `${selectedContacts.length} of ${contacts.length} contacts selected`
+                  : `Select all ${contacts.length} contacts`
+                }
+              </span>
+            </div>
+            {selectedContacts.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBulkOperations(true)}
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Bulk Operations
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Error message */}
@@ -109,42 +187,51 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
             </CardContent>
           </Card>
         ) : (
-          contacts.map((contact) => (
-            <Card key={contact.id} className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div onClick={() => onContactSelect(contact)} className="flex-1">
-                    <CardTitle className="text-lg">
-                      {contact.first_name} {contact.last_name}
-                    </CardTitle>
-                    {contact.job_title && (
-                      <p className="text-sm text-gray-600 mt-1">{contact.job_title}</p>
-                    )}
+          contacts.map((contact) => {
+            const isSelected = selectedContacts.some(c => c.id === contact.id)
+            return (
+              <Card key={contact.id} className={`hover:shadow-md transition-shadow cursor-pointer ${isSelected ? 'ring-2 ring-blue-500' : ''}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => handleContactSelect(contact, checked)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div className="flex items-start justify-between flex-1">
+                      <div onClick={() => onContactSelect(contact)} className="flex-1">
+                        <CardTitle className="text-lg">
+                          {contact.first_name} {contact.last_name}
+                        </CardTitle>
+                        {contact.job_title && (
+                          <p className="text-sm text-gray-600 mt-1">{contact.job_title}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onContactEdit(contact)
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(contact.id, `${contact.first_name} ${contact.last_name}`)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onContactEdit(contact)
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(contact.id, `${contact.first_name} ${contact.last_name}`)
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
               <CardContent className="pt-0">
                 <div className="space-y-2">
                   {contact.email && (
@@ -182,7 +269,8 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
                 </div>
               </CardContent>
             </Card>
-          ))
+            )
+          })
         )}
       </div>
 
@@ -191,6 +279,23 @@ export function ContactList({ onContactSelect, onContactCreate, onContactEdit })
         <CSVImport
           onImportComplete={handleCSVImportComplete}
           onCancel={() => setShowCSVImport(false)}
+        />
+      )}
+
+      {/* Export Modal */}
+      {showExport && (
+        <ContactExport
+          contacts={selectedContacts.length > 0 ? selectedContacts : contacts}
+          onClose={() => setShowExport(false)}
+        />
+      )}
+
+      {/* Bulk Operations Modal */}
+      {showBulkOperations && selectedContacts.length > 0 && (
+        <ContactBulkOperations
+          selectedContacts={selectedContacts}
+          onClose={() => setShowBulkOperations(false)}
+          onOperationComplete={handleBulkOperationComplete}
         />
       )}
     </div>
