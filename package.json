@@ -1,0 +1,28 @@
+{
+  "name": "compass-crm",
+  "version": "1.0.0",
+  "description": "Multi-tenant CRM system for CBS Group and Water Roads",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd frontend/compass-crm-frontend && npm run build",
+    "dev": "cd frontend/compass-crm-frontend && npm run dev",
+    "install-frontend": "cd frontend/compass-crm-frontend && npm install",
+    "install-backend": "cd backend && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeffdusting/compass-crm.git"
+  },
+  "keywords": [
+    "crm",
+    "multi-tenant",
+    "supabase",
+    "react",
+    "vite"
+  ],
+  "author": "Manus AI",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
