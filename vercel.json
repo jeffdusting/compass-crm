@@ -1,17 +1,24 @@
 {
-  "buildCommand": "cd frontend/compass-crm-frontend && npm run build",
-  "outputDirectory": "frontend/compass-crm-frontend/dist",
-  "installCommand": "cd frontend/compass-crm-frontend && npm install",
-  "devCommand": "cd frontend/compass-crm-frontend && npm run dev",
-  "framework": "vite",
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "frontend/compass-crm-frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
   ],
-  "env": {
-    "VITE_SUPABASE_URL": "@supabase_url",
-    "VITE_SUPABASE_ANON_KEY": "@supabase_anon_key"
-  }
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "buildCommand": "cd frontend/compass-crm-frontend && npm run build",
+  "outputDirectory": "frontend/compass-crm-frontend/dist",
+  "installCommand": "cd frontend/compass-crm-frontend && npm install"
 }
